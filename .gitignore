@@ -1,0 +1,17 @@
+# API 키 — 키가 든 파일은 올리지 않고 빈 양식만 올린다
+.env
+.env.*
+!.env.example
+
+# 수집 결과 — 도구가 실행할 때 만드는 폴더. 도매몰 판매자의 상품 정보라 올리지 않는다
+output/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# IDE · OS
+.vscode/
+.idea/
+.DS_Store
