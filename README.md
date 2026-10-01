@@ -33,7 +33,7 @@
 | 필요 | 확인 | 비고 |
 |---|---|---|
 | Claude Code | — | 스킬 호출용. 국내 도구를 터미널 직접 실행만 할 경우 불필요 |
-| Python 3 | `python3 --version` | 표준 라이브러리만 사용(`pip install` 없음). 3.14.4에서 실행 확인 |
+| Python 3 | `python3 --version` | 국내 도구·메일 받기는 표준 라이브러리만. **거래처 단가표를 쓰면** `python3 -m pip install -r requirements.txt`(pdfplumber 하나) 필요. 3.14.4에서 실행 확인 |
 | 도매꾹 오픈API 키 | — | 국내 도구를 쓸 때만. openapi.domeggook.com → 도매꾹 아이디로 로그인 → API 키 발급·관리 |
 | 네이버 메일 앱 비밀번호 | — | 거래처 단가표를 쓸 때만. 네이버 메일 환경설정 → POP3/IMAP 사용 ON → 앱 비밀번호 발급 |
 | 1688 계정 | — | 해외 명세에서 1688을 쓸 때만(alibaba는 로그인 불필요). 검색 시점에 본인이 직접 SMS 인증 |
@@ -45,7 +45,7 @@
 1. 빈 폴더를 하나 만들고 Claude Code로 그 폴더를 엽니다.
 2. 이 저장소 링크(`https://github.com/sooyoungkm6/sourcing-cost-scrape.git`)를 주고 **"이 저장소를 현재 폴더에 클론하고 쓸 수 있게 세팅해 줘"**라고 요청합니다.
 3. 세팅이 끝나면 `.env`를 열어 쓸 스킬의 값만 채웁니다 — `DOMEGGOOK_API_KEY`(국내 도구) · `NAVER_LOGIN_ID`·`NAVER_MAIL_APP_PW`(거래처 단가표).
-4. 거래처 단가표를 쓸 계획이면 `sourcing-channels.md`의 소싱처 레지스트리 ③ 줄에 거래처 정식 상호·메일 주소를 먼저 적습니다(아래 "거래처 단가표" 절 참조).
+4. 거래처 단가표를 쓸 계획이면 `python3 -m pip install -r requirements.txt`로 pdfplumber를 설치하고, `sourcing-channels.md`의 소싱처 레지스트리 ③ 줄에 거래처 정식 상호·메일 주소를 먼저 적습니다(아래 "거래처 단가표" 절 참조).
 5. 스킬이 목록에 보이지 않으면 Claude Code를 다시 시작합니다.
 
 ```
@@ -64,6 +64,7 @@
 ├─ examples/            ← 견본 4개(그대로 저장소에 들어 있음)
 ├─ .env.example
 ├─ .env                 ← 세팅 때 만들어지는 파일(.env.example 을 복사해 만든 것)
+├─ requirements.txt     ← 거래처 단가표를 쓸 때만 설치(pdfplumber)
 └─ output/              ← 실행하면 생기는 폴더. 수집 결과 CSV
 ```
 
@@ -73,6 +74,7 @@
 
 - 저장소를 **현재 폴더 바로 아래에** 받는다 — 하위 폴더를 새로 만들지 않는다. `.claude/`가 이 폴더 바로 아래에 있어야 스킬로 인식된다.
 - `.env.example`을 복사해 `.env`를 만든다. 값은 전부 비워 둔다. **키·비밀번호 값은 사용자가 직접 입력한다 — 채팅으로 받거나 화면에 출력하지 않는다.**
+- 사용자가 거래처 단가표를 쓸 계획이면 `python3 -m pip install -r requirements.txt`를 실행한다(국내 도구·메일 받기만 쓸 계획이면 건너뛴다).
 - 검증: `python3 tools/tool-domeggook-sourcing.py --help` · `tools/tool-naver-mail-fetch.py --help` · `tools/tool-pricebook-intake.py --help` 종료 코드 0.
 - 스킬이 목록에 보이지 않으면 Claude Code를 다시 시작해 달라고 안내한다.
 - 보고: 클론 결과, `.env` 처리 결과(값은 출력하지 않는다), 검증 명령의 결과.

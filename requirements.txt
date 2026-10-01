@@ -1,0 +1,4 @@
+# 거래처 단가표 도구(tool-pricebook-intake · tool-pricebook-parse)가 PDF 를 읽을 때 씁니다.
+# 설치: python3 -m pip install -r requirements.txt
+# 국내 도매 도구(tool-domeggook-sourcing)와 메일 받기 도구는 파이썬 기본 기능만 써서 설치할 것이 없습니다.
+pdfplumber
