@@ -9,7 +9,7 @@ tool-naver-mail-fetch.py
    거래처 표가 비어 있으면 멈추고 안내한다 — 거래처 이름과 메일 주소를 먼저 적는다.
 
 인증:
-  - imap.naver.com:993 SSL. 네이버 메일 환경설정 → POP3/IMAP 사용 ON 필요.
+  - imap.naver.com:993 SSL. 네이버 메일 환경설정 → «POP3/IMAP 설정» → «IMAP/SMTP 사용» 을 «사용함» 으로.
   - 계정 = NAVER_LOGIN_ID(스마트스토어 계정과 동일). **앱 비번(NAVER_MAIL_APP_PW) 먼저**,
     실패하거나 비어 있으면 NAVER_LOGIN_PW. (2단계 인증 계정은 로그인 PW 로 IMAP 에 못 들어간다 — _connect() 의 순서가 정본)
 
@@ -283,7 +283,8 @@ def build_filters(vendor, senders, keywords, vendors):
         return _split(keywords), _split(senders)
     if not vendors:
         raise SystemExit("❌ 거래처 문서에 단가표 거래처가 없습니다.\n"
-                         "   sourcing-channels.md 거래처 표에 거래처 이름(정식 상호)과 단가표를 보내는 메일 주소를 먼저 적습니다.")
+                         "   sourcing-channels.md 거래처 표에 거래처 이름(정식 상호)과 단가표를 보내는 메일 주소를 먼저 적습니다.\n"
+                         "   괄호로 시작하는 줄은 양식으로 보고 건너뜁니다 — 양식 글자를 지우고 실제 이름을 적습니다(«(주)가나다» 는 됩니다).")
     return _split(keywords), vendor_registry.mail_filters(vendors)
 
 

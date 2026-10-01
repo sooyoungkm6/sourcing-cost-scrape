@@ -5,6 +5,7 @@
 
 읽는 줄: 표의 «방식» 칸이 `③` 인 줄.
 건너뛰는 줄: `③*`(거래처는 맞지만 단가표를 보관하지 않는 곳) · 이름이 괄호로 시작하는 줄(빈 양식 안내).
+  «(주)가나다»·«(유)…» 처럼 회사 표시로 시작하는 이름은 양식이 아니다 — 읽는다.
 거래처 이름은 **정식 상호**로 적는다. 단가표·메일에는 «㈜»·«(주)»·«주식회사»가 섞여 나오므로
 대조할 때는 core_name() 으로 회사 표시를 뗀 이름을 쓴다.
 """
@@ -18,7 +19,9 @@ SECTION = "소싱처 레지스트리"
 PRICEBOOK = "③"
 EMAIL = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
 ALIAS = re.compile(r"표지\s*이름\s*[:：]\s*([^.。|]+)")      # «표지 이름: 거래처B · BRAND-NAME» — 마침표·칸 끝까지
-COMPANY_MARK = re.compile(r"주식회사|\(주\)|㈜")
+COMPANY_MARK = re.compile(r"주식회사|유한회사|합자회사|합명회사|\((?:주|유|합|사|재|자)\)|㈜|㈲")
+# 양식 줄 = 이름이 괄호로 시작하는 줄. 단 «(주)가나다» 처럼 회사 표시로 시작하는 이름은 양식이 아니다
+PLACEHOLDER = re.compile(r"\((?!(?:주|유|합|사|재|자)\))")
 
 
 @dataclass(frozen=True)
@@ -67,11 +70,12 @@ def parse_vendors(text: str) -> list[Vendor]:
         if len(r) <= max(col["소싱처"], col["방식"]):
             continue
         name = r[col["소싱처"]].replace("**", "").strip()
-        if r[col["방식"]].strip() != PRICEBOOK or not name or name.startswith("("):
+        if r[col["방식"]].strip() != PRICEBOOK or not name or PLACEHOLDER.match(name):
             continue
         access = r[col["접속"]] if col["접속"] is not None and len(r) > col["접속"] else ""
         m = ALIAS.search(" | ".join(r))            # «표지 이름: …» 은 어느 칸에 있어도 된다 — 배포팩 표에는 비고 칸이 없다
-        aliases = tuple(a.strip() for a in re.split(r"[·,]", m.group(1)) if a.strip()) if m else ()
+        aliases = tuple(a.strip() for a in re.split(r"[·,]", m.group(1))
+                        if a.strip() and not a.strip().startswith("(")) if m else ()     # 괄호로 시작 = 지우지 않은 양식 글자
         out.append(Vendor(name=name, emails=tuple(dict.fromkeys(EMAIL.findall(access))), aliases=aliases))
     return out
 
