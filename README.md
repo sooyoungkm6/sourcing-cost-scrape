@@ -9,7 +9,7 @@
 세 스킬 모두 **원가를 모으는 것까지**입니다. 경쟁사 판매가 조사·마진 계산은 이 팩에 없습니다.
 
 - **실행 주체** — Claude Code가 스킬 문서를 읽고 도구를 실행한 뒤 결과를 보고합니다. 국내 도구는 터미널에서 스크립트를 직접 실행해도 됩니다.
-- **공통 산출 형식** — 세 스킬 모두 같은 16열 CSV(`output/{YYYYMMDD}-{소싱처}-{품목명}.csv`, `pattern` 열로 ①②③ 구분)를 씁니다. 열 정의는 `research-output-schema.md`가 정본입니다.
+- **공통 산출 형식** — 국내 도구·해외 명세는 같은 16열 CSV(`output/{YYYYMMDD}-{소싱처}-{품목명}.csv`, `pattern` 열로 ①② 구분)를 씁니다. 거래처 단가표는 별도 8열 정규화 CSV를 씁니다(아래 §출력 CSV 참조). 열 정의는 `research-output-schema.md`가 정본입니다.
 
 ## 무엇이 들어 있나
 
@@ -22,9 +22,9 @@
 | 사람 개입 | 없음 | 배대지 요금 기준(kg/CBM) 확인 질문 1회 | 새 거래처 첫 확인 1회, 그 뒤 자동 |
 
 - **스킬 3개** — `.claude/skills/domestic-sourcing-scrape/`·`intl-sourcing-scrape/`·`pricebook-update/` (각 `SKILL.md`)
-- **코드 5개** — `tool-domeggook-sourcing.py`·`schema_loader.py`(국내) · `tool-naver-mail-fetch.py`·`tool-pricebook-intake.py`·`tool-pricebook-parse.py`(거래처 단가표) · `vendor_registry.py`(거래처 문서 읽기, 단가표 스킬이 씀) · `ocr-vision.js`(단가표 표지 OCR, macOS 전용)
+- **코드 7개** — `tool-domeggook-sourcing.py`·`schema_loader.py`(국내) · `tool-naver-mail-fetch.py`·`tool-pricebook-intake.py`·`tool-pricebook-parse.py`(거래처 단가표) · `vendor_registry.py`(거래처 문서 읽기, 단가표 스킬이 씀) · `ocr-vision.js`(단가표 표지 OCR, macOS 전용)
 - **참조 문서 2개** — `sourcing-channels.md`(소싱처 레지스트리) · `research-output-schema.md`(출력 스키마 정의)
-- **견본 4개** — `examples/`에 도매꾹·도매매 CSV 각 1개 + 거래처 단가표용 읽기 설정·품명 대응표 견본 각 1개
+- **견본 5개** — `examples/`에 세 스킬의 결과 견본(도매꾹·도매매·alibaba·1688·거래처 단가표 정규화 각 1개)
 
 ## 설치 (최초 1회, 공통)
 
@@ -35,7 +35,7 @@
 | Claude Code | — | 스킬 호출용. 국내 도구를 터미널 직접 실행만 할 경우 불필요 |
 | Python 3 | `python3 --version` | 국내 도구·메일 받기는 표준 라이브러리만. **거래처 단가표를 쓰면** `python3 -m pip install -r requirements.txt`(pdfplumber 하나) 필요. 3.14.4에서 실행 확인 |
 | 도매꾹 오픈API 키 | — | 국내 도구를 쓸 때만. openapi.domeggook.com → 도매꾹 아이디로 로그인 → API 키 발급·관리 |
-| 네이버 메일 앱 비밀번호 | — | 거래처 단가표를 쓸 때만. 네이버 메일 환경설정 → POP3/IMAP 사용 ON → 앱 비밀번호 발급 |
+| 네이버 메일 앱 비밀번호 | — | 거래처 단가표를 쓸 때만. 네이버 메일 환경설정 → «POP3/IMAP 설정» → «IMAP/SMTP 사용» 을 «사용함» 으로(같은 화면의 «동기화 메일 수» 는 최대로) → 앱 비밀번호 발급 |
 | 1688 계정 | — | 해외 명세에서 1688을 쓸 때만(alibaba는 로그인 불필요). 검색 시점에 본인이 직접 SMS 인증 |
 
 세 스킬 다 안 쓸 계획이면 해당 항목은 건너뛰어도 됩니다 — 준비물이 없는 스킬만 그 자리에서 안내 메시지를 내고 멈춥니다.
@@ -61,7 +61,7 @@
 │   ├─ tool-domeggook-sourcing.py · schema_loader.py             ← 국내 도구
 │   ├─ tool-naver-mail-fetch.py · tool-pricebook-intake.py
 │   │   tool-pricebook-parse.py · vendor_registry.py · ocr-vision.js   ← 거래처 단가표
-├─ examples/            ← 견본 4개(그대로 저장소에 들어 있음)
+├─ examples/            ← 견본 5개(그대로 저장소에 들어 있음)
 ├─ .env.example
 ├─ .env                 ← 세팅 때 만들어지는 파일(.env.example 을 복사해 만든 것)
 ├─ requirements.txt     ← 거래처 단가표를 쓸 때만 설치(pdfplumber)
@@ -127,8 +127,10 @@ python3 tools/tool-domeggook-sourcing.py --keyword "[품목명]" --with-detail -
 
 1. `tool-naver-mail-fetch.py` — 네이버 메일함(IMAP)에서 문서에 적힌 거래처가 보낸 메일만 찾아 첨부를 받습니다. 제목 키워드로 찾지 않습니다(고객 견적 문의 등이 섞여 들어오는 것을 막기 위해서입니다).
 2. `tool-pricebook-intake.py` — 받은 파일마다 자동 판정합니다: ✅ 확실한 단가표는 자동 이동, 🗄 오래된 판은 보관만, ⏭ 같은 시행일의 중복본은 건너뜀, ❓ 애매한 건만 사용자 확인, ⛔ 단가표가 아닌 파일은 그대로 둡니다. **새 거래처는 첫 확인 한 번**(표본 10행 + 자체 검사, 질문 하나)만 거치면 그 뒤로 자동입니다.
-3. `tool-pricebook-parse.py` — 거래처별 정규화 CSV를 갱신합니다. 표 양식이 기본 방식으로 안 읽히는 거래처만 `examples/견본-거래처-읽기-설정.json`·`견본-거래처-품명-대응표.csv`를 참고해 설정 파일을 만들면 됩니다.
+3. `tool-pricebook-parse.py` — 거래처별 정규화 CSV를 갱신합니다. 표 양식이 기본 방식으로 안 읽히는 거래처만 `pricebook-update` 스킬 문서의 읽기 설정·품명 대응표 설명을 따라 설정 파일을 만들면 됩니다.
 4. 교차 대조 — `tool-pricebook-parse.py --lookup {품명}`으로 이미 확보한 거래처 단가 중 최저가를 바로 조회할 수 있습니다.
+
+메일로 단가표를 안 보내는 거래처는 받은 파일을 `output/sourcing/`에 직접 넣으면 메일로 받은 것과 똑같이 처리됩니다.
 
 스캔본·손글씨 단가표는 읽지 못합니다 — PDF(글자가 선택되는 것)나 엑셀로 받아야 합니다. 엑셀 단가표 읽기는 아직 구현돼 있지 않습니다.
 
@@ -149,8 +151,8 @@ tools/
   tool-pricebook-intake.py            거래처 단가표 2단계 — 판정·이동
   tool-pricebook-parse.py             거래처 단가표 3단계 — 정규화 + 교차 대조(--lookup)
   vendor_registry.py                  거래처 문서(sourcing-channels.md ③ 줄) 읽기 — 위 세 도구가 import
-  ocr-vision.js                       단가표 표지가 이미지일 때 macOS 내장 OCR로 읽는다
-examples/                             견본 4개 — 도구를 돌리면 나오는 것과 같은 모양
+  ocr-vision.js                       단가표 표지의 글자가 (cid:번호)로 깨져 나올 때 macOS 내장 OCR로 시행일만 읽는다
+examples/                             견본 5개 — 세 스킬을 돌리면 나오는 결과와 같은 모양
 .env.example                          환경 변수 템플릿
 output/                               수집 결과 — 실행하면 생기는 폴더(git 제외)
 ```
@@ -160,16 +162,16 @@ output/                               수집 결과 — 실행하면 생기는 �
 - `sourcing-channels.md`의 소싱처 표는 **국내·해외 두 방식은 기록용**입니다 — 행을 추가·수정해도 그 스킬의 수집 대상은 바뀌지 않습니다(수집 대상은 각 도구의 인자로만 정해집니다). **거래처 단가표(③)는 다릅니다** — 이 문서의 ③ 줄이 실제 설정값입니다. 도구가 이 표에서 거래처 이름·메일 주소를 읽습니다.
 - `research-output-schema.md`는 CSV 머리글의 정본입니다. 국내 도구는 `schema_loader.py`가 실행 시 이 문서에서 열 이름을 읽어 씁니다.
 
-### 출력 CSV — 16열 (스키마①, 공통)
+### 출력 CSV
 
-세 스킬 모두 같은 16열을 씁니다. `pattern` 열로 어느 방식에서 나왔는지 구분합니다(① 국내 · ② 해외 · ③ 거래처).
+국내 도구·해외 명세는 같은 16열(스키마①)을 씁니다. `pattern` 열로 어느 방식에서 나왔는지 구분합니다(① 국내 · ② 해외).
 
 | 열 | 내용 |
 |---|---|
-| `source` | 소싱처(`도매꾹`·`도매매`·`alibaba.com`·`1688`·거래처 정식 상호) |
-| `pattern` | 수집 방식 번호(①②③) |
+| `source` | 소싱처(`도매꾹`·`도매매`·`alibaba.com`·`1688`) |
+| `pattern` | 수집 방식 번호(①②) |
 | `item` | 상품명 |
-| `origin` | 원산지(국내 도구만 채움) |
+| `origin` | 원산지(국내 도구는 공란, 해외 명세는 «중국(수입)»으로 채움) |
 | `material` | 재질 |
 | `spec` | 규격 |
 | `manufacturer` | 제조사/브랜드 |
@@ -182,6 +184,19 @@ output/                               수집 결과 — 실행하면 생기는 �
 | `weight_g` / `volume_cm3` | 개당 중량·부피(해외 명세만 채움 — 국제 운임 계산용) |
 
 전체 열 정의·예시는 `research-output-schema.md`가 정본입니다.
+
+거래처 단가표는 **별도 8열 정규화 CSV**(`.claude/references/sourcing-prices/{거래처}/{거래처}-단가-정규화.csv`)를 씁니다 — 위 16열 스키마를 쓰지 않습니다.
+
+| 열 | 내용 |
+|---|---|
+| `거래처` | 소싱처 레지스트리 ③ 줄의 정식 상호 |
+| `품번` | 원본 표에 품번이 없으면 공란 |
+| `품명` | 상품명(읽기 설정의 품명 대응표가 있으면 그걸 따름) |
+| `규격` | 규격 |
+| `단위` | 포장 단위 |
+| `개당단가_krw` | 개당 단가(원) |
+| `시행일` | 단가표 PDF에 기재된 시행일(메일 수신일 아님) |
+| `원본파일` | 정리된 원본 PDF 파일명 |
 
 ## .gitignore 정책
 

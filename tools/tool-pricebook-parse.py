@@ -238,19 +238,24 @@ def table_grid(page, table, mode):
                            [e for e in edges if e["orientation"] == "h"], table.bbox)
 
 
+def _title_key(s):
+    """표 이름을 맞출 때 쓰는 글자 — 띄어쓰기와 쉼표를 뺀다. 대응표에 쉼표를 안 적어도 되게(쉼표가 든 칸은 Numbers 에서 표가 깨져 열린다)."""
+    return _squash(s).replace(",", "")
+
+
 def apply_name_map(rows, name_map):
     """품명 대응표 적용. rows=[(표 이름, 규격, 포장, 단가, 쪽시행일)] → 같은 모양.
-    표 이름(공백 무시)과 줄 이름(규격의 «x» 앞부분)이 맞는 줄마다 확정 품명 하나씩 — 여러 줄이면 여러 품명으로 나뉜다."""
+    표 이름(띄어쓰기·쉼표 무시)과 줄 이름(규격의 «x» 앞부분)이 맞는 줄마다 확정 품명 하나씩 — 여러 줄이면 여러 품명으로 나뉜다."""
     if not name_map:
         return list(rows)
     index = {}
     for m in name_map:
-        index.setdefault(_squash(m["표 이름"]), []).append(m)
+        index.setdefault(_title_key(m["표 이름"]), []).append(m)
     out = []
     for name, spec, pack, price, date in rows:
         head, sep, tail = str(spec).rpartition("x")
         key = _squash(head if sep else "")
-        hits = [m for m in index.get(_squash(name), []) if not m["줄 이름"] or _squash(m["줄 이름"]) == key]
+        hits = [m for m in index.get(_title_key(name), []) if not m["줄 이름"] or _squash(m["줄 이름"]) == key]
         if not hits:
             out.append((name, spec, pack, price, date))
             continue
